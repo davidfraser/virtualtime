@@ -323,6 +323,85 @@ class datetime(_original_datetime_module.datetime):
                 r = datetime_module.datetime(r)
             return r
 
+    if 'PyPy' in sys.version:
+        def __eq__(self, other):
+            if isinstance(other, _underlying_datetime_type):
+                return self._cmp(other) == 0
+            elif hasattr(other, "timetuple") and not isinstance(other, date):
+                return NotImplemented
+            else:
+                return False
+
+        def __ne__(self, other):
+            if isinstance(other, _underlying_datetime_type):
+                return self._cmp(other) != 0
+            elif hasattr(other, "timetuple") and not isinstance(other, date):
+                return NotImplemented
+            else:
+                return True
+
+        def __le__(self, other):
+            if isinstance(other, _underlying_datetime_type):
+                return self._cmp(other) <= 0
+            elif hasattr(other, "timetuple") and not isinstance(other, date):
+                return NotImplemented
+            else:
+                datetime_module._cmperror(self, other)
+
+        def __lt__(self, other):
+            if isinstance(other, _underlying_datetime_type):
+                return self._cmp(other) < 0
+            elif hasattr(other, "timetuple") and not isinstance(other, date):
+                return NotImplemented
+            else:
+                datetime_module._cmperror(self, other)
+
+        def __ge__(self, other):
+            if isinstance(other, _underlying_datetime_type):
+                return self._cmp(other) >= 0
+            elif hasattr(other, "timetuple") and not isinstance(other, date):
+                return NotImplemented
+            else:
+                datetime_module._cmperror(self, other)
+
+        def __gt__(self, other):
+            if isinstance(other, _underlying_datetime_type):
+                return self._cmp(other) > 0
+            elif hasattr(other, "timetuple") and not isinstance(other, date):
+                return NotImplemented
+            else:
+                datetime_module._cmperror(self, other)
+
+        def _cmp(self, other):
+            assert isinstance(other, _underlying_datetime_type)
+            mytz = self._tzinfo
+            ottz = other._tzinfo
+            myoff = otoff = None
+
+            if mytz is ottz:
+                base_compare = True
+            else:
+                if mytz is not None:
+                    myoff = self._utcoffset()
+                if ottz is not None:
+                    otoff = other._utcoffset()
+                base_compare = myoff == otoff
+
+            if base_compare:
+                return datetime_module._cmp((self._year, self._month, self._day,
+                             self._hour, self._minute, self._second,
+                             self._microsecond),
+                            (other._year, other._month, other._day,
+                             other._hour, other._minute, other._second,
+                             other._microsecond))
+            if myoff is None or otoff is None:
+                raise TypeError("can't compare offset-naive and offset-aware datetimes")
+            # XXX What follows could be done more efficiently...
+            diff = self - other     # this will take offsets into account
+            if diff.days < 0:
+                return -1
+            return diff and 1 or 0
+
 class virtual_datetime(datetime):
     @classmethod
     def now(cls, tz=None):
