@@ -41,6 +41,9 @@ class datetime_tz(base_datetime_tz.datetime_tz):
         other = localize(other)
     return super(datetime_tz, self).__ne__(other)
 
+  def __hash__(self):
+    return super(datetime_tz, self).__hash__()
+
 def localize(dt, force_to_local=True):
     """Localize a datetime to the local timezone
 
